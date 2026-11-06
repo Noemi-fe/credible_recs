@@ -75,7 +75,7 @@ def test_a_makeup_tip_offering_another_categorys_product_in_its_place_is_left_ou
     items = (mentions(3, f"Velo {product_type}", category="general")
              + mentions(3, f"Halo {product_type}", category="general"))
     # Changed on purpose on 5 Nov 2026 (fix 2, from the rules review): the foundation case asked a plain "foundation",
-    # where 92c823f's code already left the tip out, so it never failed; it now asks "foundation for oily skin" with
+    # where fa6ee08's code already left the tip out, so it never failed; it now asks "foundation for oily skin" with
     # its need, as the settled answer did. Until then the call read: answer_with(items, two_notes(kind, first, second),
     # product_type, request="makeup primer" if product_type == "makeup primer" else product_type).
     request, needs = {"makeup primer": ("makeup primer", ()),

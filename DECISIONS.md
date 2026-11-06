@@ -1782,14 +1782,14 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   deletion rule.
 - 5 Nov 2026, night, fix 1 after the warm (Claude, the fixer; Claude's technical calls, reported to Noemi; branch
   makeup-threads; nothing pushed, merged or deployed). From the rules review, the shopper review and the summary
-  fact-check of the settled makeup answers (92c823f). Inside Noemi's bounds: no scoring weight, picks bar, product type,
+  fact-check of the settled makeup answers (fa6ee08). Inside Noemi's bounds: no scoring weight, picks bar, product type,
   told number (about 25 minutes, 30 a day, 39 a month) or the 48-hour quote rule touched; the need-fit rule still off
   (config.NEED_FIT_FOR_PICKS = False); the product notes (data/product_notes.json: NARS's reformulation, Becca, got2b's
   hair gel) still waiting for her yes and unchanged. The changes have their tests
-  (engine/tests/test_makeup_after_warm.py, 31 on made-up text: 21 fail on 92c823f's code, and 10 guard what stays as it
+  (engine/tests/test_makeup_after_warm.py, 31 on made-up text: 21 fail on fa6ee08's code, and 10 guard what stays as it
   was; corrected in fix 2 after the warm, from the rules review: 9 guard it, and the tenth, the tinted moisturiser tip
-  for foundation, was meant to show the change but passed on 92c823f's code too, as it asked "foundation" without the
-  oily-skin need; fix 2 asks "foundation for oily skin" with its need, and it now fails on 92c823f's code).
+  for foundation, was meant to show the change but passed on fa6ee08's code too, as it asked "foundation" without the
+  oily-skin need; fix 2 asks "foundation for oily skin" with its need, and it now fails on fa6ee08's code).
   (1) Tips (engine/answer.py _not_for_this_makeup, _names_this_makeup; config.TIP_OTHER_CATEGORIES and
   TIP_OTHER_CATEGORY_WORDS). In a makeup answer a tip whose name names nothing of the type asked for, by one of module
   1's names for it or the last word of the type's name, is left out: a tool ("eyelash curler" for mascara), another
@@ -1875,14 +1875,14 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   too). eval/run_eval.py on a copy of the store, live checks off: every scored number as in the integrator's row but
   module 4's product groups, 34,442 to 34,441 (4,750 to 4,749 loose: the Stila and Smashbox names joining their
   products). The blind-test answers' quotes shown, 257 to 252 (all verified), and threads waiting for a live check, 56
-  to 42, moved too, but 92c823f's own code gives the same 252 and 42 on the same copy minutes later, so they follow the
+  to 42, moved too, but fa6ee08's own code gives the same 252 and 42 on the same copy minutes later, so they follow the
   live-check cache's state, not this round; so do the ingredient and needs sections, which print part 4's picks again
   with either code (the integrator's note put their change down to the warm). eval/metrics.json holds the two counts.
   (Corrected in fix 2 after the warm, from the rules review: not the cache's state but the day the evaluation judges
   by. pipeline._today() is date.today(), which sets the 14-day live-check window; the integrator's runs set TZ=UTC and
-  judged 6 Nov, this round's ran at 23:51 EST without it and judged 5 Nov, as did 92c823f's run minutes later. Judged
+  judged 6 Nov, this round's ran at 23:51 EST without it and judged 5 Nov, as did fa6ee08's run minutes later. Judged
   on 6 Nov the same code gives 257 and 56 and the integrator's ingredient and needs picks. The fix 1 row of
-  eval/RUNS.md is corrected the same way; d41114d's commit message gives the same wrong cause and stays as it is, as
+  eval/RUNS.md is corrected the same way; 2183482's commit message gives the same wrong cause and stays as it is, as
   correcting it would need a rebase.)
   Left for Noemi: whether Marc Jacobs's bronzer should stay under "Also worth a look" (its voices praise the original,
   no longer made; the brand relaunched in 2026 with another bronzer); NARS Orgasm as a blush pick beside "Skip: NARS
@@ -1893,11 +1893,11 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   words and go to the Trash with the deletion rule.
 - 5 Nov 2026, night, into 6 Nov (past midnight EST), fix 2 after the warm (Claude, the fixer; Claude's technical calls,
   reported to Noemi; branch makeup-threads; nothing pushed, merged or deployed). From the second rules review, the
-  shopper review and the summary fact-check of fix 1 (d41114d). Inside Noemi's bounds: no scoring weight, picks bar,
+  shopper review and the summary fact-check of fix 1 (2183482). Inside Noemi's bounds: no scoring weight, picks bar,
   product type, told number (about 25 minutes, 30 a day, 39 a month) or the 48-hour quote rule touched; the need-fit
   rule still off (config.NEED_FIT_FOR_PICKS = False); the product notes (data/product_notes.json: NARS's
   reformulation, Becca, got2b's hair gel) unchanged, waiting for her yes. Values at the end of engine/config.py ("fix
-  2"); tests in engine/tests/test_makeup_fix2.py (23 on made-up text: 11 fail on d41114d's code, 10 guard what stays
+  2"); tests in engine/tests/test_makeup_fix2.py (23 on made-up text: 11 fail on 2183482's code, 10 guard what stays
   and 2 cover fix 1's on-demand lines, which had none, each failing when its line is undone), and one case of
   engine/tests/test_makeup_after_warm.py changed on purpose with a dated comment (fix 1's note above says why).
   (1) Tips (engine/answer.py _look_for, _talks_about_a_need). In a makeup answer with a need asked, a "Look for" whose
@@ -1954,7 +1954,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   it gave for the evaluation's two moving counts. That cause is the day the evaluation judges by, not the live-check
   cache or the warm: pipeline._today() is date.today(), which sets the 14-day live-check window, and the integrator's
   runs set TZ=UTC (judged 6 Nov) while fix 1's evaluation ran at 23:51 EST without it (judged 5 Nov). The fix 1 row of
-  eval/RUNS.md is corrected the same way; d41114d's commit message keeps the wrong cause, as correcting it would need
+  eval/RUNS.md is corrected the same way; 2183482's commit message keeps the wrong cause, as correcting it would need
   a rebase.
   Measured through the heavy lock on the live profile store (sha d78c2535f930, the same before and after every run),
   live checks off, with TZ=UTC (judged 6 Nov). Sweep of 295 answers (the same lists as fix 1's), no error, against
@@ -1988,7 +1988,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   reviews, Claude's, reported to Noemi. Inside her bounds: apart from her decisions (2) and (3), no scoring weight,
   picks bar, product type, told number (about 25 minutes, 30 a day, 39 a month) or the 48-hour quote rule touched; the
   need-fit rule still off (config.NEED_FIT_FOR_PICKS = False). Values at the end of engine/config.py ("Noemi's
-  decisions of 6 Nov 2026"); tests in engine/tests/test_makeup_round3.py (26 on made-up text, each failing on 4e30f34's
+  decisions of 6 Nov 2026"); tests in engine/tests/test_makeup_round3.py (26 on made-up text, each failing on 4e2ebc9's
   code), and fix 2's on-demand test changed on purpose with a dated comment ((5) below).
   (1) Noemi's: the product notes stay (data/product_notes.json: NARS's 2024 reformulation, Becca's closure, got2b's hair
   gel), each shown wherever its product is shown. Checked in this round's sweep of 295 answers: every shown item whose
@@ -2054,9 +2054,9 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   engine/tests/test_answer_shows.py, engine/tests/test_makeup_fix2.py and five example phrases in the notes of 4 and 5
   Nov above); the rest are common English or product names. (Corrected by round 3's fixer, from the rules review: this
   note first said fix 2's commit message still held the phrase. It doesn't: the phrase is in two of that commit's
-  files, engine/answer.py's _bare_like docstring and engine/tests/test_makeup_fix2.py; c872326 takes it out of both, and
-  no other commit's files or message hold it. So the history rewrite before the merge must fold 4e30f34 into c872326,
-  or rewrite 4e30f34's files; rewording its message is not enough: the orchestrator's call.)
+  files, engine/answer.py's _bare_like docstring and engine/tests/test_makeup_fix2.py; 31abbd2 takes it out of both, and
+  no other commit's files or message hold it. So the history rewrite before the merge must fold 4e2ebc9 into 31abbd2,
+  or rewrite 4e2ebc9's files; rewording its message is not enough: the orchestrator's call.)
   (8) Corrected in round 3: fix 2's note above and its eval/RUNS.md row counted "Also worth a look" quotes changed in 3
   answers; it was 2 (bronzer and "moisturiser without niacinamide"), as the mascara answer's YSL item changed only its
   name.
@@ -2094,7 +2094,7 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   sentences that ran close to one comment's own words (a test sentence about daily use in
   engine/tests/test_makeup_split.py and the "same experience" warning of engine/tests/test_answer_shows.py's skip
   test): both reworded with made-up text that tests the same thing (the tests pass unchanged otherwise). Commit
-  4e30f34's files (not its message, as this note first said; corrected by round 3's fixer) still hold the phrase noted
+  4e2ebc9's files (not its message, as this note first said; corrected by round 3's fixer) still hold the phrase noted
   in (7).
   (11) The integrator's final run (6 Nov 2026, 08:13 to 08:40 UTC), through the heavy lock on the live profile store
   (sha d78c2535f930 before and after every step), live checks off, TZ=UTC, on the committed code with the summaries of
@@ -2115,8 +2115,8 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   both brow answers; Becca's is shown nowhere. No hair product is among the picks of the 17 answers. `python -m
   engine.summaries check`: 912 entries, 663 fine, 249 with problems, fix 2's 249 older entries; none of a makeup type.
   Whole suite, three times (before and after the two test sentences of (10), the last on the final commit's code
-  before its message was amended, ending at 08:46:31 UTC, while e657ead was committed at 08:46:53; corrected by round
-  3's fixer: the rules review's own run on e657ead gave the same): 7,276
+  before its message was amended, ending at 08:46:31 UTC, while d453d6d was committed at 08:46:53; corrected by round
+  3's fixer: the rules review's own run on d453d6d gave the same): 7,276
   passed and 1 failed, the unlabelled gold thread 1v40u3t (which fails on main too). Offline evaluation on a copy of
   the store: identical to fix 2's run in every number but the library's quote count, 93,773/94,276 to 93,768/94,271
   (the five mentions of (6), all five found word for word, so the share is the same to five places, 0.9946646 against
@@ -2129,25 +2129,25 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   minutes for the first and 21 for each, 15 calls a product at a minute each and 6 for the archive, 450 Gemini calls a
   day, 50,000 seconds a month, 20 waiting, 150 minutes late) are equal to main's in every value; the one config
   difference, ON_DEMAND_SEARCH_CALLS = 16 (4 Nov, Noemi's "Keep 25 min": the cap that keeps a round inside main's own
-  numbers), is not a told number and unchanged this round (no ON_DEMAND constant moved since 4e30f34). The need-fit
+  numbers), is not a told number and unchanged this round (no ON_DEMAND constant moved since 4e2ebc9). The need-fit
   rule is off (config.NEED_FIT_FOR_PICKS = False) and the three product notes are in data/product_notes.json. Every
-  commit since main is dated +0000 with the one Opus 5.5 trailer, except 92c823f's extra Sonnet 5.5 trailer, which the
+  commit since main is dated +0000 with the one Opus 5.5 trailer, except fa6ee08's extra Sonnet 5.5 trailer, which the
   orchestrator rewrites before the merge.
   Left for Noemi: whether a hair product under "Also worth a look" should carry the "Meets the bar for a pick" label
   (it does, as a product ranked below the picks does, though got2b's can never be a pick); cream blush losing its only
-  Skip item to a product it doesn't show. Left for the orchestrator: 4e30f34's files, which hold the phrase of (7) (fold
-  that commit into c872326 or rewrite its files: rewording its message is not enough; corrected by round 3's fixer, it
-  said the message), and 92c823f's extra trailer.
+  Skip item to a product it doesn't show. Left for the orchestrator: 4e2ebc9's files, which hold the phrase of (7) (fold
+  that commit into 31abbd2 or rewrite its files: rewording its message is not enough; corrected by round 3's fixer, it
+  said the message), and fa6ee08's extra trailer.
   Round 3's fixer (6 Nov 2026, from 09:20 UTC; Claude: the rules review, the shopper review and the summary fact-check
-  of e657ead; Claude's technical calls, reported to Noemi; nothing pushed, merged or deployed). Inside the same bounds:
+  of d453d6d; Claude's technical calls, reported to Noemi; nothing pushed, merged or deployed). Inside the same bounds:
   no scoring weight, picks bar, product type, told number or the 48-hour quote rule touched, engine/config.py unchanged,
   the need-fit rule still off and data/product_notes.json unchanged. Tests in engine/tests/test_makeup_round3_fix.py (7
-  on made-up text, each failing on e657ead's code); two tests that list an "Also worth a look" item's fields
+  on made-up text, each failing on d453d6d's code); two tests that list an "Also worth a look" item's fields
   (engine/tests/test_web.py, engine/tests/test_answer_worth.py) changed on purpose with a dated comment, for its new
   field.
   (12) Claude's, the rules review's one blocking problem: (7), (10) and the last lines of (11) said a commenter's phrase
   was still in fix 2's commit message. It was in two of that commit's files instead; the three sentences are corrected
-  above, and so is the orchestrator's task: fold 4e30f34 into c872326, or rewrite 4e30f34's files, before the merge.
+  above, and so is the orchestrator's task: fold 4e2ebc9 into 31abbd2, or rewrite 4e2ebc9's files, before the merge.
   Also corrected above, from the same review: the library's share found word for word is the same to five places, not
   six (and in its eval/RUNS.md row); the 18 summaries of (9) were worded as 19; and the integrator's last suite run was
   on the final commit's code before its message was amended.
@@ -2208,3 +2208,9 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   settled by (13)), and cream blush losing its only Skip item to the NARS line it ranks but doesn't show (her decision
   spoke of a shown product; folding it for an unshown one too is Claude's reading).
   The scratch files of this round hold commenters' words and go to the Trash with the deletion rule.
+- 6 Nov 2026, before the merge (Claude, the orchestrator): the branch history after 1744cec was rewritten with git
+  filter-branch, so no commit holds the commenter's phrase of (7) or the extra Sonnet 5.5 trailer. 4e2ebc9's two
+  files now carry the paraphrase that 31abbd2 had brought, and fa6ee08's message ends with the one Opus 5.5 trailer.
+  The final tree is identical to the one the three reviews passed, and every date is unchanged. The commit ids in
+  these notes, eval/RUNS.md and one test comment were updated to the rewritten ones (fa6ee08, 2183482, 4e2ebc9,
+  31abbd2, d453d6d, f98f945).
