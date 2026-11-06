@@ -54,6 +54,11 @@ from: one older than that is never written to the folder or the bundle and never
 bucket deletes objects 2 days old (deploy/cloudrun/DEPLOY.md). The bucket is reached with plain HTTPS calls to Cloud
 Storage's JSON API, with the token Cloud Run's metadata server gives the service account; when it can't be reached,
 checks go on with this folder and Reddit, and the bucket is left alone for BUCKET_REST_SECONDS.
+
+On the public site on Cloud Run the "folder" is memory (5 Nov 2026). The disk there is memory and a file takes a whole 4
+KiB page, where a check is about 300 bytes of words, so the site keeps its checks in memory instead (`in_memory`,
+_MemoryChecks) and lets go of any over 48 hours old whenever it makes the bundle. Nothing else changes: the same checks
+are kept for the same 48 hours, the bundle holds the same, and the daily job and Noemi's computer keep files as before.
 """
 
 import hashlib
@@ -320,18 +325,74 @@ def checker_from_env(environ=os.environ, **settings) -> "LiveChecker":
     return LiveChecker(bucket=Bucket(name) if name else None, **settings)
 
 
+class _FolderChecks:
+    """Saved checks as files in a folder, each whole under another name and then renamed: a check reading one at the same
+    moment sees all of it or none. This machine's folder, as it has always been (Noemi's computer, the daily jobs)."""
+
+    def __init__(self, folder: Path):
+        self.folder = Path(folder)
+
+    def read(self, name: str) -> bytes | None:
+        try:
+            return (self.folder / name).read_bytes()
+        except OSError:
+            return None
+
+    def write(self, name: str, data: bytes) -> None:
+        cache_file = self.folder / name
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        partial = cache_file.with_name(f"{cache_file.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
+        partial.write_bytes(data)
+        partial.replace(cache_file)
+
+    def names(self) -> list[str]:
+        return sorted(path.name for path in self.folder.glob("*.json")) if self.folder.is_dir() else []
+
+
+class _MemoryChecks:
+    """Saved checks held in memory (5 Nov 2026, the site's memory review). On Cloud Run the disk is memory and a file
+    takes a whole 4 KiB page whatever its size, where a check is about 300 bytes of words: 18,400 files at the start (the
+    bucket's bundle) and over 44,000 after a day's reading ahead were 70 to 200 MiB of a 2 GiB limit. Each check is its
+    JSON text here, whole, put in with one assignment, so a check read at the same moment is all of it or none. A
+    dictionary is safe to read and change from several threads at once for those two things."""
+
+    def __init__(self):
+        self._checks: dict[str, bytes] = {}
+
+    def read(self, name: str) -> bytes | None:
+        return self._checks.get(name)
+
+    def write(self, name: str, data: bytes) -> None:
+        self._checks[name] = bytes(data)
+
+    def names(self) -> list[str]:
+        return sorted(list(self._checks))
+
+    def remove_if_unchanged(self, name: str, data: bytes) -> None:
+        """Lets `name` go, unless it was written again since `data` was read from it."""
+        if self._checks.get(name) is data:
+            self._checks.pop(name, None)
+
+
 class LiveChecker:
     """`fetch`, `clock` and `sleep` can be swapped for fakes, which is how the tests avoid the network (a fake `fetch`
     may leave out the rate-limit headers: then the burst and refill pace every read). Safe to ask from several threads
     at once (engine.pipeline checks the comments of an answer together). `bucket`: the bucket the pre-check's checks
-    are shared through, as one bundle (Bucket; load_bundle, save_bundle), or None. Checks never call it."""
+    are shared through, as one bundle (see Bucket, load_bundle and save_bundle), or None. Checks never call it. `in_memory` (the
+    public site on Cloud Run, 5 Nov 2026): the saved checks are kept in memory instead of in `cache_dir`, which is then
+    never made or read (_MemoryChecks), and checks over 48 hours old, which nothing uses, are let go of whenever the
+    bundle is made: in _bundle_data, through share_bundle, which the site calls at most hourly and only when reading ahead
+    has read or taken in something new (engine.read_ahead, share_if_due). forget_old_checks does the same on its own, and
+    nothing in production calls it."""
 
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR, fetch=_http_get, clock=None, sleep=time.sleep,
                  min_interval: float = LIVE_CHECK_MIN_INTERVAL, burst: int = LIVE_CHECK_BURST,
                  refill: float = LIVE_CHECK_REFILL_SECONDS, reserve: int = LIVE_CHECK_RESERVE,
                  spread_below: int = LIVE_CHECK_SPREAD_BELOW, max_wait: float = LIVE_CHECK_MAX_WAIT_SECONDS,
-                 bucket: Bucket | None = None):
+                 bucket: Bucket | None = None, in_memory: bool = False):
         self.cache_dir = Path(cache_dir)
+        self._memory = in_memory
+        self._store = _MemoryChecks() if in_memory else _FolderChecks(self.cache_dir)
         self.bucket = bucket
         self._fetch = fetch
         self._clock = clock or (lambda: datetime.now(UTC))
@@ -540,18 +601,41 @@ class LiveChecker:
         """The reads of the last 48 hours in this machine's folder made another way than the embed page (`via`:
         "bright_data"), by name, as the bundle holds them: what the daily plan passes to the site."""
         found = {}
-        for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
-            entry = self._saved_here(path.name)
-            if _ENTRY_NAME.match(path.name) and self._younger(entry, MAX_AGE) and entry.get("via") == via:
-                found[path.name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
+        for name in self._store.names():
+            entry = self._saved_here(name)
+            if _ENTRY_NAME.match(name) and self._younger(entry, MAX_AGE) and entry.get("via") == via:
+                found[name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
         return found
+
+    def saved_count(self) -> int:
+        """How many saved checks this checker holds (files in its folder, or entries in memory)."""
+        return len(self._store.names())
+
+    def forget_old_checks(self) -> int:
+        """Lets go of the checks kept in memory that nothing can use any more: over 48 hours old (check, last_read and the
+        bundle all stop at MAX_AGE), or no check at all. Checks kept as files are never deleted by the program: 0. How
+        many were let go. Nothing in production calls this: _bundle_data lets the same checks go whenever the bundle is
+        made."""
+        if not self._memory:
+            return 0
+        gone = 0
+        for name in self._store.names():
+            data = self._store.read(name)
+            entry = _entry(data)
+            if data is not None and not (_ENTRY_NAME.match(name) and self._younger(entry, MAX_AGE)):
+                self._store.remove_if_unchanged(name, data)
+                gone += 1
+        return gone
 
     def _bundle_data(self) -> tuple[bytes, int]:
         checks = {}
-        for path in sorted(self.cache_dir.glob("*.json")) if self.cache_dir.is_dir() else ():
-            entry = self._saved_here(path.name)
-            if _ENTRY_NAME.match(path.name) and self._younger(entry, MAX_AGE):
-                checks[path.name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
+        for name in self._store.names():
+            saved = self._store.read(name)
+            entry = _entry(saved)
+            if _ENTRY_NAME.match(name) and self._younger(entry, MAX_AGE):
+                checks[name] = {key: entry[key] for key in ("fetched_at", "text", "via") if key in entry}
+            elif self._memory and saved is not None:
+                self._store.remove_if_unchanged(name, saved)  # over 48 hours old, or no check: nothing uses it again
         data = json.dumps({"written_at": self._clock().isoformat(), "checks": checks}, ensure_ascii=False)
         return data.encode("utf-8"), len(checks)
 
@@ -561,10 +645,7 @@ class LiveChecker:
         return here if self._within(here, max_age) else None
 
     def _saved_here(self, name: str) -> dict | None:
-        try:
-            return _entry((self.cache_dir / name).read_bytes())
-        except OSError:
-            return None
+        return _entry(self._store.read(name))
 
     def _within(self, entry: dict | None, max_age: timedelta) -> bool:
         """Whether a saved check is younger than `max_age`; one that found no comment on the page (text None) counts
@@ -580,13 +661,9 @@ class LiveChecker:
         return entry is not None and self._clock() - datetime.fromisoformat(entry["fetched_at"]) < max_age
 
     def _keep(self, name: str, data: bytes) -> None:
-        """Saves a check in this machine's folder, whole under another name and then renamed: a check reading it at the
-        same moment sees all of it or none."""
-        cache_file = self.cache_dir / name
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
-        partial = cache_file.with_name(f"{cache_file.stem}.{os.getpid()}.{threading.get_ident()}.tmp")
-        partial.write_bytes(data)
-        partial.replace(cache_file)
+        """Saves a check, whole: in this machine's folder (under another name and then renamed) or in memory. A check
+        reading it at the same moment sees all of it or none."""
+        self._store.write(name, data)
 
     def _get(self, url: str, wait: bool = True, wait_at_most: float | None = None):
         """The page, and when its call started: at least min_interval after the call before it started, whichever

@@ -30,6 +30,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from engine.compact import share_check, share_thread
 from engine.extract import CheckResult, check_extractions, extracted_dir
 from engine.gold import load_threads
 from engine.memo import REQUEST_WORK, changed_just_now, register
@@ -140,6 +141,8 @@ def _changed_just_now(fingerprint: tuple, started: int) -> bool:
 
 def _read(threads_dir: Path) -> KeptLibrary:
     thread_problems: list[str] = []
-    threads = load_threads(threads_dir, skip_broken=True, problems=thread_problems)
-    checked, problems = check_extractions(threads_dir, threads)
+    # 5 Nov 2026: objects of one shape share one set of field names (engine/compact.py), shared as each thread and each
+    # extraction is read, so a library read again is never in memory at its full size.
+    threads = load_threads(threads_dir, skip_broken=True, problems=thread_problems, each=share_thread)
+    checked, problems = check_extractions(threads_dir, threads, each=share_check)
     return KeptLibrary(threads, checked, thread_problems + problems)

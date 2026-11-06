@@ -29,13 +29,14 @@ from bisect import bisect_right
 from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from functools import cache
+from functools import cache, lru_cache
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from engine.arctic_shift import ArcticShiftClient, ArcticShiftError
 from engine.bright_data import DISCOVER_POSTS_EACH, BrightDataError
 from engine.config import (
+    ANSWERS_KEPT_TYPES,
     ARCHIVE_ADVICE_SEARCHES,
     ARCHIVE_ADVICE_WORDS,
     ARCHIVE_DOWN_MINUTES,
@@ -115,6 +116,17 @@ def for_request(thread: Thread, query: ParsedQuery) -> Thread:
     return thread
 
 
+# What is made for each product type below is big for the general category's 347 types (5 Nov 2026, the site's memory
+# review): the expression that finds a type's names inside the names of the other types of its category is 549 KB each
+# (196 MB for all 446 types), and the longer names holding a type's words 77 KB and 32 KB. The one for names holding a
+# community's name is small (6 Nov 2026: only 2 types have community names, about 1 KiB each, where an earlier figure of
+# up to 0.6 MB came from building it for types with none, which the code never does). A `cache` kept them for every
+# type ever asked about, 150 MB or more after an hour of many types, and a visitor's own words for a type the open model
+# names each added one. The answers' own memory keeps ANSWERS_KEPT_TYPES types, so these keep that many as well, the types
+# asked most lately. One let go is made again, the same expression, in 3 to 50 ms.
+_KEPT_TYPES = ANSWERS_KEPT_TYPES
+
+
 @cache
 def _product_pattern(product_type: str) -> re.Pattern:
     """Finds any word that names the product: whole words only, in any case, singular or plural.
@@ -138,7 +150,7 @@ def _product_pattern(product_type: str) -> re.Pattern:
     return re.compile(rf"\b(?:{alternatives})\b", re.IGNORECASE)  # (?!): never
 
 
-@cache
+@lru_cache(maxsize=_KEPT_TYPES)
 def _covering_pattern(product_type: str) -> re.Pattern:
     """Longer names that hold one of this product's words but name something else: the other product types' names and
     module 1's look-alike phrases ("tea pot" and "crock pot" hold "pot"; "dry shampoo" holds "shampoo")
@@ -169,7 +181,7 @@ def _alternation(phrases: list[str], pattern=re.escape) -> str:
                     + ")" for group in groups.values())
 
 
-@cache
+@lru_cache(maxsize=_KEPT_TYPES)
 def _covering_phrases(product_type: str) -> frozenset[str]:
     """The longer names that may hold a place where the product is named: the first types' names (engine.query's own
     list) and look-alikes, all of them, as before 14 Oct 2026, so what the first types' answers read doesn't move (the
@@ -432,7 +444,7 @@ def _community_pattern(product_type: str) -> re.Pattern:
     return re.compile(rf"\b(?:{'|'.join(map(re.escape, names))})\b(?!['’]s\b)", re.IGNORECASE)
 
 
-@cache
+@lru_cache(maxsize=_KEPT_TYPES)
 def _community_covers(product_type: str) -> re.Pattern | None:
     """The longer names of something else holding one of the type's community names: other types' names ("lash primer",
     a mascara's) and the look-alikes ("eyeshadow primer"), with or without a plural "s"."""
@@ -835,7 +847,7 @@ def _without_names_inside(title: str, product_type: str, category: str) -> str:
     return pattern.sub(" ", title) if pattern is not None else title
 
 
-@cache
+@lru_cache(maxsize=_KEPT_TYPES)
 def _inside_pattern(product_type: str, category: str) -> re.Pattern | None:
     own = next((p for p in PRODUCT_TYPES if p.name == product_type), None)
     names = sorted({product_type, *(own.keywords if own else ())}, key=lambda n: (-len(n), n))

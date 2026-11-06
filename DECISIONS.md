@@ -2214,3 +2214,164 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   The final tree is identical to the one the three reviews passed, and every date is unchanged. The commit ids in
   these notes, eval/RUNS.md and one test comment were updated to the rewritten ones (fa6ee08, 2183482, 4e2ebc9,
   31abbd2, d453d6d, f98f945).
+- 5 Nov 2026, midday, the site's memory back to 2 GiB (Claude, the site-memory builder, branch site-memory from makeup-threads
+  1744cec, not merged and not deployed because the makeup branch merges first. Noemi chose it on 5 Nov 2026 with "Let's do A":
+  the site goes back from 4 GiB to 2 GiB with margin. Google's free allowance for Cloud Run is most likely one pot shared by the
+  site and the jobs, October's real use came to 84% of its memory part and most of that was the site at 4 GiB, and halving it
+  frees room to double on-demand reading for free. Everything below is Claude's technical calls, reported to Noemi. No answer,
+  wording, score, rule, read-ahead count, busy cap, concurrency or on-demand behaviour changed.)
+  Measured first. Cloud Monitoring (read only) for the site's 4 GiB revisions from 15 Oct to 5 Nov 2026, 6,061 five-minute
+  windows: the busiest window of each day rose from 1.28 GiB (16 Oct) to 2.00 GiB (5 Nov), as the library grew from ~1,950 to
+  2,748 threads and as each instance's memory climbed through its life (the evening note below). The median window was 1.64 GiB, 54% of the windows were over 1.6 GiB, 19% over 1.8 and 0.9%
+  over 2.0. At 2 GiB it would have run out of memory within hours. The pre-check job used 1.1 to 1.47 GiB of its 3 GiB since 16 Oct (1.47 on 19 Oct, 1.35 on 4 Nov).
+  The site was then run on Noemi's computer the way the image runs it: the library as the image holds it (2,748 threads), the open
+  model, the keep-warm ping reading ahead against stand-ins for Reddit and the bucket, 8 answers at once, a bundle of 300 threads
+  read on demand and a 34-minute soak of about 4,200 different requests, with its macOS footprint read every 1.5 seconds. On the
+  code as it was it peaked at 2,075 MB (Cloud Monitoring's busiest window of that week was 2,048 MB, which is no calibration, as
+  the evening note below says). The breakdown, each object counted once after the 85 warm answers: the library's threads 371 MB and extractions
+  168, the tables of every name's words and features that the library's name index fills 290, the brand rules' pairs 75, the
+  credibility tables 85, the profile store 69, the name index 63 and ranges 43, and the comments read for each thread 56 once all
+  are touched. Remembered answers were never let go of.
+  Bounded, each with its tests written first (engine/tests/test_site_memory.py). One: objects of one shape share the set of field
+  names that pydantic keeps for each (728 bytes a comment), made as each thread is read (engine/compact.py), about 250 MB, and a
+  library read again no longer holds two sizes. Two: the tables of names' words and features are emptied once a category's name
+  index is built, about 190 MB. Three: the profile store the site reads is held compactly and read only, 69 MB to 41. Four: the
+  brand rules' pairs share their sets of names, 75 MB to 15. Five: remembered answers are kept to 24 MB, about 1,000 answers,
+  expired ones first and then the oldest. Six: a Table holds 40,000 answers (200,000 before), the facts of recent threads 256
+  (512) and the library's names share their words, about 100 MB together. Not changed: the 64 product types the answers' memory
+  keeps and what warming warms (the search page's examples and the 62 demo requests stay warm).
+  Result, footprint in MB by load phase, as it was and as it is: getting ready 1,821 and 1,208, keep-warm pings 1,847 and 1,209,
+  8 cold answers at once 1,846 and 1,209, remembered answers 1,791 and 1,170, on-demand status polls 1,795 and 1,172, the bundle
+  taken in 1,834 and 1,172, the soak 2,075 and 1,449. The resident set, with the open model's file counted, peaked at 2,509 and
+  2,035. The worst case of this round was 70.7% of 2 GiB, which the review found was not the worst case (the evening note below).
+  With the 300 largest library threads as the bundle in place of a typical 300 (92,855 comments against 24,015) the bundle phase peaked at 1,210 MB and a 17-minute soak at 1,530 MB (74.7%), where the typical bundle's soak was 1,432 MB at that point.
+  Nothing a visitor sees changed. All 296 requests of eval/sweep.py (the 182 of the eval files, 62 demo, 37 interviewee, 15
+  makeup and 3 extra) gave identical answers in every field, before and after on one frozen copy of the profile store with live
+  checks off, twice (the second time on the committed code). eval/run_eval.py with live checks off gave identical output
+  (333 lines) and an identical eval/metrics.json. Speed did not move: warmed answers had a median of 0.235 s before and 0.237 s
+  after (24 requests), first answers of a type 0.281 and 0.282 s (20 types), remembered answers take no time, getting ready took
+  132.7 and 132.6 s, and the sweep's 296 answers took 282 and 272 s in all. The whole suite: 7,221 passed and 1 failed, the known unlabelled gold thread 1v40u3t (7,196 passed and the same 1 failed before, so the 25 new tests are the difference). Two assertions of existing tests changed on purpose, dated where they stand: test_cloudrun's site and pre-check memory (4 GiB to 2 GiB, 3 GiB to 2 GiB) and test_region's `--memory 4Gi` check.
+  The pre-check job (the same library, the open model off, 559 requests) peaked at 1,410 MB before and 1,092 after on Noemi's
+  computer, against 1.35 GiB on Cloud Run on 4 Nov 2026, so it runs at 2 GiB too (53% of it, inside the same 80%) and bills a third
+  fewer GiB-seconds. The site's reading ahead bills at most 124,992 GiB-seconds a month now, where 4 GiB billed 249,984.
+  Room: a library thread costs the site 0.255 MB when warm (it was 0.40) and about 0.31 on the worst case. The count of threads
+  that fit and the weeks of room first worked out from that are withdrawn (the evening note below). The next bounds, by what the
+  measurement shows: the comments read for each thread (56 MB, about half could go), the name index and the library's ranges (63
+  and 57 MB, packable with their words shared), the name features (38 MB, their sets of letters and lengths shared) and the
+  credibility tables (~90 MB, capped at 40,000 each already).
+  The harness is in eval/site_memory now: a fake Reddit and bucket, a load driver that runs in segments with the server frozen
+  between them, and the structure sizers. Not measured here: Linux (glibc's arenas per thread may add to or take from the
+  figures), Cloud Run's own count of memory, and the real Reddit and bucket. After a deploy, read Cloud Monitoring's memory for the
+  first day and compare it with the evening note's figures.
+- 5 Nov 2026, evening, the site's memory: the review's four blockers (Claude, the site-memory fixer, branch site-memory on
+  top of beab67c, not merged and not deployed). The midday note above is the first round. A reviewer ran the site on Noemi's
+  computer the way the image runs it, with the library of 2,748 threads, the open model, the 300 largest threads as an
+  on-demand bundle and a 60-minute soak of 7,547 different answers, and found the code right (answers identical, the suite
+  green) and the memory not yet safe at 2 GiB. What the first round got wrong and what was done, all Claude's technical calls
+  with nothing a visitor sees changed: no answer, wording, score, rule, the 48-hour quote rule, the concurrency of 8, reading
+  ahead's counts, the busy cap or on-demand behaviour. Speed is the one thing that may move, and it is reported below.
+  One, the soak went over the line: 1,742.5 MiB, 85.1% of 2 GiB, where the midday note called 1,449 MB the worst case. The
+  cause was not fragmentation. A compiled expression of 549 KB that finds a type's names inside the names of the other types
+  of the general category (engine/sources.py, _inside_pattern) was kept for every type ever asked about: 31 MB after getting
+  ready, 153 MB after a soak that touched 338 types, 196 MB for all 446, and a visitor's own words for a type the open model
+  names added one each. Two more were the same in kind (_covering_pattern with
+  _covering_phrases, and _community_covers, which is small: 6 Nov 2026, only 2 types have community names, about 1 KiB each,
+  and the up to 0.6 MB each first written came from building it for types with none, which the code never does). A heap dump
+  after 11 minutes of the soak showed the compiled expressions up 150 MB, the memory Python
+  keeps for small objects up 59 MB and the footprint up 240 MB. They are now least-recently-used caches of ANSWERS_KEPT_TYPES
+  (64) types, about 47 MiB for the 64 biggest general types (measured 6 Nov 2026, 37.8 for _inside_pattern, 5.6 for
+  _covering_pattern and 4.0 for _covering_phrases, and a floor, since Python's own re cache of 512 patterns can hold ones the
+  cache let go), and one let go is made again, the same expression, in 3 to 50 ms. In one process (the library and
+  the 300 largest threads), 700 different requests after getting ready left the footprint at 1,067 MiB where it had been
+  1,246 MiB, and the compiled expressions at 35 MB where they were 166 MB. Corrected 6 Nov 2026: this was the soak's climb,
+  not the climb through each instance's life that Cloud Monitoring shows with pings alone (below), because no new product
+  types are asked then and these caches do not grow.
+  Two, the on-demand bundle's spike: taking a bundle in parsed the whole file at once, about 7.8 times its size for a moment
+  (+119 MiB for the typical 16.1 MiB bundle, +416 MiB for the 300 largest threads). It is read one item at a time now
+  (engine/on_demand.py, bundle_items): +25 MiB and +64 MiB, the file itself being the floor. The whole file is checked first,
+  so a bundle that cannot be read still writes nothing.
+  Three, Cloud Run's memory disk: a saved check is a file there and takes a 4 KiB page of memory whatever its size, which no
+  macOS figure shows (18,400 files from the bucket's bundle at a start, 44,838 after the review's soak: 70 to 215 MiB). The
+  public site keeps its saved checks in memory now (engine/live_check.py, _MemoryChecks, with the bucket set): 526 bytes
+  each, 9 MiB for 18,400 and 23 MiB for 44,838, so the computer's figures count them. Any over 48 hours old, which nothing
+  uses, is let go whenever the bundle is made. The daily job and Noemi's computer keep files as before.
+  Four, the live projection was wrong. Cloud Monitoring's memory climbs through each instance's life and falls at each start
+  (0.055 to 0.132 GiB a day with pings alone, 0.16 to 0.38 with the Show HN traffic, over instances of 4 to 73 hours), and
+  the level 3 hours after a start rose from 1.16 to 1.20 GiB on 16 Oct to 1.60 to 1.72 GiB by 3 Nov. The first round read
+  that as the library's growth (0.035 GiB a day), counted two weeks of room from it ("about 600 more threads fit"), expected
+  the live site near 1.4 GiB, and took the 1.3% match between a 34-minute soak and a week's busiest window for a calibration.
+  All four claims are withdrawn. Corrected 6 Nov 2026: the climb is only partly explained. With pings alone no new product
+  types are asked, so the expressions above do not grow, and the checks' pages (reading ahead adds up to about 9,350 files a
+  day, about 40 MiB) explain about 40 MiB a day at most, so 16 to 95 MiB a day of it is still unexplained, over instances
+  that live up to 73 hours. The checks are in memory now and the expressions are bounded. MALLOC_ARENA_MAX=2 is in the
+  image as well (glibc keeps two arenas, not one per thread), the one change no Mac can measure.
+  The review's runs again on this code: getting ready 1,196 MiB, the largest bundle taken in 1,257 (it was 1,573.5), the
+  60.6-minute soak 1,584.3 for the lifetime (it was 1,742.5, 85.1%), the largest bundle changing again at that level no new
+  peak (it was 2,016.5, 98.5%), the control run 1,259 (it was 1,494), no error and no 503 in the soaks, and the saved checks
+  counted (67,732 of them at the end of the soak, 35 MiB in memory).
+  deploy.sh stays at 2 GiB, which Noemi chose (replaced 6 Nov 2026: 3 GiB first, see the last note). The worst case on the
+  computer is 1,584.3 MiB, 77.4% of 2 GiB, under the 80% ceiling of 1,638 MiB, with the saved checks counted (corrected 6 Nov
+  2026: the on-demand bundle's files on Cloud Run's memory disk were not counted, which makes it about 1,633 MiB, 79.8%).
+  The margin is 54 MiB, it was measured on a Mac with reading ahead and
+  the bundle's sharing sped up 60 times, and no Linux figure exists, so the first deploy is to be watched in Cloud Monitoring
+  for a day and a week, and `--memory 3Gi` is the one-flag fallback (reading ahead then bills 187,488 GiB-seconds a month,
+  52% of 360,000, against 124,992 at 2 GiB and 249,984 at 4 GiB). The reviewer's own alternative was to stay at 4 GiB or try
+  3 GiB until Linux is measured, and that stays Noemi's call.
+  Nothing a visitor sees changed: all 296 requests of eval/sweep.py (the 182 of the eval files, 62 demo, 37 interviewee, 15
+  makeup and 3 extra) gave answers identical in every field except the seconds, on one frozen copy of the profile store with
+  live checks off, and eval/run_eval.py with live checks off gave identical output and an identical eval/metrics.json.
+  Speed: warmed answers had a median of 0.249 s before the first round, 0.263 s after it and 0.262 s now (the review's bench,
+  best of two, 24 requests), first answers of a type 1.203, 1.304 and 1.131 s (20 types), so the second round moved nothing
+  and the first round's 4% on warmed answers (3.7% here) stays. The sweep took 268.8 s and the eval 168 s. The whole suite:
+  7,266 passed and the 1 known failure (test_library::test_real_gold_threads_saved_to_the_library_load_back, the unlabelled
+  gold thread 1v40u3t), in 171 s under the heavy lock, where the first round had 7,221 and the same 1, so the 45 new tests
+  are the difference. New tests are in engine/tests/test_site_memory.py, each written before its change. The measuring
+  scripts are in eval/site_memory now (README.md there), so the numbers can be reproduced.
+  Left as they are, with reasons. Remembered answers are kept to 24 MB, about 1,000 answers, so with more than that many
+  different answers inside their 24 hours a remembered one can be let go and worked out again under the busy cap, and a
+  repeat visitor may then wait or get a 503 in a rush: the answers stay the same, and a larger cap or keeping the most used
+  would be the fix if it shows. The 4% slower warmed answers (the review's paired median 0.249 s to 0.262 s) are most likely
+  forget_names and the smaller tables working some things out again: not noticeable, left. Taking in a bundle with new
+  threads still makes the first answer wait 25 to 50 s (the library is read again) and refuses the visitors who ask meanwhile
+  after 20 s, the busy cap, as before: nothing a visitor sees was changed. The hourly bundle write still builds the whole
+  bundle in memory (about 40 to 90 MB for a moment at 20,000 to 70,000 saved checks), which writing it in pieces would trim.
+  No Monitoring alert was made (it sends email in Noemi's name), and no gcloud command that changes anything was run. Linux
+  is unmeasured, so read Cloud Monitoring's memory for the first day and week after the deploy, and use `--memory 3Gi` if it
+  passes 1.6 GiB (80%) (replaced 6 Nov 2026: it starts at 3 GiB, see the last note). The control run's first ping after the typical bundle took 75 s on the review's code (uncompressed
+  reading ahead against the stand-in for Reddit): 0.5 s now, the bundle read item by item, so the whole-file parse was at
+  least part of it and I have no run of the older code to say what else. The scratch folders (library and profile copies,
+  fake Reddit's pages, bundles, sweeps and evals) hold commenters' words and writers' names, and go to the Trash with the
+  deletion rule.
+- 6 Nov 2026, the site's memory: 3 GiB for the first deploy (Claude, the site-memory follow-up on top of f4d4be1, branch
+  site-memory, not merged and not deployed). Two independent reviews of f4d4be1 found the code correct and the answers
+  unchanged in all 296 sweep requests. The site deploys at 3 GiB first, for the reasons below, and steps down to 2 GiB once
+  Cloud Monitoring shows p99 memory under about 1.5 GiB on instances at least 2 days old. It goes back to 3 GiB if the p99
+  goes over 0.8 of the limit in any 5-minute window or the warmed level climbs more than about 0.05 GiB a day. The only
+  behaviour change is the memory flag (deploy.sh, `--memory 3Gi`). The pre-check job stays at 2 GiB and the reading job at
+  1 GiB.
+  Why 3 GiB first. One, the 1,584.3 MiB lifetime peak did not count everything. On Cloud Run, write_items puts an on-demand
+  bundle's threads into data/library/{threads,extracted} on the in-memory disk, and a Mac's footprint never counts files. For
+  the 300 largest threads that is 49.0 MiB in 4 KiB pages, so the same worst case on Cloud Run is about 1,633 MiB, 79.8% of
+  2 GiB and 5 MiB under the 80% ceiling of 1,638 MiB. A second measurement review found a lifetime peak of 1,459.3 MiB
+  (71.3%) with its own soak, and Cloud Monitoring put the live old code, once warm, at 88 to 93% of the Mac's figure for the
+  same code. That makes the Mac a conservative stand-in, but Linux, glibc with MALLOC_ARENA_MAX=2 and several days of creep
+  are still unmeasured. Two, the climb with pings alone (live: 0.055 to 0.132 GiB a day) is only partly explained. No new
+  product types are asked then, so the compiled patterns do not grow, and the saved checks explain about 40 MiB a day at
+  most, so 16 to 95 MiB a day is unexplained, over instances that live up to 73 hours. The earlier notes said the patterns
+  were most likely the larger part of it, and that is withdrawn.
+  3 GiB costs reading ahead at most 187,488 GiB-seconds a month (52% of the free 360,000), where 2 GiB costs 124,992 (35%).
+  The memory bound in test_cloudrun's reading-ahead test was raised from 0.35 to 0.55 for this, dated where it stands.
+  Corrected on the way, in docs, comments and docstrings only. The 64 biggest general types' patterns are about 47 MiB
+  measured (37.8 _inside_pattern, 5.6 _covering_pattern, 4.0 _covering_phrases), not 35 MB, and a floor, since Python's own
+  re cache can hold patterns the cache let go. The 268 MB for _community_covers came from building it for types with no
+  community names, which the code never does. Only 2 types have community names, about 1 KiB each. The pre-check job's
+  figures read 913 MB on the computer and 1.47 GiB of its 3 on Cloud Run (19 Oct). bundle_items accepts a broken item that a
+  later copy of the same thread overrides, where a parse of the whole file refuses it, which is harmless since the reading
+  job writes the bundle with json.dumps of a dict. LiveChecker's old checks are let go in _bundle_data, through
+  share_bundle, at most hourly and only when reading ahead has read something new, and nothing in production calls
+  forget_old_checks. eval/site_memory's prep_cloud.py fixes the bundle's check ages when it is run, so a run more than about
+  7 hours later loses those checks to the 48-hour rule, and the README says to run it again before each run.
+  The whole suite under the heavy lock: 7,266 passed and the 1 known failure
+  (test_library::test_real_gold_threads_saved_to_the_library_load_back, the unlabelled gold thread 1v40u3t), as before.
+  No gcloud command was run, nothing was pushed or deployed, and no Monitoring alert was made. No eval/RUNS.md row, since
+  this is a docs and config commit and no eval ran.

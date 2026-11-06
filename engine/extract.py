@@ -53,7 +53,7 @@ import html
 import json
 import re
 import sys
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Literal
@@ -438,11 +438,13 @@ def _check_folder(threads_dir: Path, skip_broken: bool = False) -> tuple[dict[st
     return results, thread_problems + problems
 
 
-def check_extractions(threads_dir: Path, threads: Iterable[Thread]) -> tuple[dict[str, CheckResult], list[str]]:
+def check_extractions(threads_dir: Path, threads: Iterable[Thread],
+                      each: Callable[[CheckResult], None] | None = None) -> tuple[dict[str, CheckResult], list[str]]:
     """Every extraction file next to a threads folder, checked against its thread among `threads` (the folder's threads,
     already loaded): {thread id: CheckResult}, and the problems of the files that couldn't be checked. load_checked
     reads the threads first; the library kept in memory between answers (engine.library_cache) reads them once for
-    both retrieval and this check (12 Oct 2026)."""
+    both retrieval and this check (12 Oct 2026). `each` (5 Nov 2026) is told every result as soon as it is made, so the kept
+    library can make it smaller (engine/compact.py) while the rest are still being checked."""
     by_id = {thread.id: thread for thread in threads}
     threads_dir = Path(threads_dir)
     folder = extracted_dir(threads_dir)
@@ -460,6 +462,8 @@ def check_extractions(threads_dir: Path, threads: Iterable[Thread]) -> tuple[dic
             continue
         # The file name says which thread it belongs to; if the file's own thread_id disagrees, every mention is dropped.
         results[path.stem] = check_extraction(extraction, thread)
+        if each is not None:
+            each(results[path.stem])
     return results, problems
 
 

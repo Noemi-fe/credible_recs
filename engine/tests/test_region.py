@@ -441,7 +441,13 @@ def test_the_warm_up_time_limit_and_the_startup_probe_are_as_they_were():
     deploy = (Path(web.REPO_ROOT) / "deploy" / "cloudrun" / "deploy.sh").read_text(encoding="utf-8")
     period, threshold = (int(n) for n in regex.search(r"periodSeconds=(\d+),.*failureThreshold=(\d+)", deploy).groups())
     assert period * threshold == 240 and web.WARM_UP_ANSWERS_SECONDS * 2 < period * threshold
-    assert "--memory 4Gi" in deploy
+    # Changed on purpose 5 Nov 2026 (the site-memory builder, Noemi's "Let's do A"): the site asks for less than the 4 GiB it
+    # asked for from 15 Oct 2026 as a stopgap. The warm-up's time limit and the probe above are the same, and getting ready
+    # took as long (132.7 s before, 132.6 s after, on Noemi's computer). Changed again 6 Nov 2026: 3 GiB for the first deploy
+    # (2 GiB once Cloud Monitoring shows room, DEPLOY.md, The site's memory).
+    from engine.tests.test_cloudrun import _command
+
+    assert "--memory 3Gi" in _command(deploy, "$GCLOUD run deploy")  # the site's own line: the job's (2Gi) is another line
 
 
 # --- The page: a small control, remembered in the browser only ---

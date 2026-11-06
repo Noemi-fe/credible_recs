@@ -152,11 +152,15 @@ def test_the_pre_check_has_room_for_the_grown_library():
     # threads; working out its 486 requests peaked at 2.97 GB on Noemi's computer with the open model, 2.25 GB without).
     # So 3 GiB, inside the free tier (the test below), and the open model off: the rules place 484 of the 486 requests
     # ("body wash" and a vague request are the two left), and the model alone is about 0.7 GB.
+    # Changed on purpose 5 Nov 2026 (the site-memory builder, Noemi's "Let's do A"): 2 GiB. The library's objects take about a
+    # third less memory (engine/tests/test_site_memory.py), and the plan run for 559 requests over 2,748 threads peaked at
+    # 913 MB on Noemi's computer (1,410 MB before), well under 2 GiB where 80% is the ceiling. The job on Cloud Run peaked at
+    # 1.47 GiB of its 3 on 19 Oct 2026 (Cloud Monitoring). A job of 2 GiB bills a third fewer GiB-seconds.
     import re
 
     job = _command(DEPLOY_SH.read_text(encoding="utf-8"), '$GCLOUD run jobs deploy')
     amount, unit = re.search(r"--memory (\d+)(Mi|Gi)", job).groups()
-    assert int(amount) / (1024 if unit == "Mi" else 1) >= 3
+    assert int(amount) / (1024 if unit == "Mi" else 1) == 2
     assert "CREDIBLE_RECS_QUERY_MODEL=off" in job
 
 
@@ -211,8 +215,19 @@ def test_the_site_reads_ahead_within_a_third_and_a_bit_of_its_own_free_tier():
     # 62,496 vCPU-seconds a month (35% of the site's 180,000 free, no longer under a third) and, at 4 GiB, 249,984
     # GiB-seconds (69% of 360,000, no longer 60%). Still free, with 65% of the vCPU-seconds and 31% of the GiB-seconds left
     # for answering visitors.
-    assert seconds * cpu <= 180_000 * 0.35 and seconds * gib <= 360_000 * 0.7
-    assert (seconds * cpu, seconds * gib) == (62_496, 249_984)  # DEPLOY.md's sums
+    # Changed on purpose 5 Nov 2026 (the site-memory builder, Noemi's "Let's do A" of 5 Nov 2026): the site runs at 2 GiB again,
+    # its memory bounded (engine/tests/test_site_memory.py and DEPLOY.md, The site's memory), so reading ahead bills at most
+    # 124,992 GiB-seconds a month (34.7% of 360,000, where 4 GiB billed 249,984, 69%), which frees the site's free GiB-seconds
+    # for answering visitors and for reading on demand to be doubled later. Its vCPU-seconds are as they were.
+    # Changed on purpose 6 Nov 2026 (after two reviews of that work): the first deploy of this code is at 3 GiB, because the
+    # same worst case counted on Cloud Run is about 1,633 MiB, 79.8% of 2 GiB (the on-demand files on its memory disk are
+    # no part of a Mac's footprint), and Linux is not measured. Reading ahead then bills at most 187,488 GiB-seconds a month
+    # (52.1% of 360,000), so the memory bound is raised from 0.35 to 0.55. The site steps down to 2 GiB (124,992, 34.7%)
+    # once Cloud Monitoring's p99 memory stays under about 1.5 GiB (DEPLOY.md, The site's memory), and this bound can then
+    # come back down.
+    assert gib == 3
+    assert seconds * cpu <= 180_000 * 0.35 and seconds * gib <= 360_000 * 0.55
+    assert (seconds * cpu, seconds * gib) == (62_496, 187_488)  # DEPLOY.md's sums
 
 
 def test_the_bright_data_records_stay_well_inside_its_free_tier():

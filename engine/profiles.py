@@ -214,6 +214,83 @@ class ProfileStore:
         return entry[name]
 
 
+class CompactProfileStore(ProfileStore):
+    """The store as answers read it, in half the memory or less (5 Nov 2026, the site-memory builder). It is read only.
+    It answers `user_stats`, `flair`, `checked_at` and `flair_checked_at` exactly as ProfileStore does, from the same
+    file, and it cannot be changed or saved. The site, the sweeps and the evaluation only read, and `warm` uses ProfileStore.
+
+    ProfileStore keeps each of the library's 56,666 writers as a dict holding a dict of nine numbers and a date as text,
+    and each of its 77,085 comments' flairs as a dict with a date as text. That is 69 MB. Here an entry is a pair of when
+    it was looked up and the numbers as a tuple in one fixed order (or null), and equal flair texts are one string. An
+    entry of any other shape, such as a writer with other numbers or one with no date, is kept as it was read and
+    behaves as it always did, a missing date included."""
+
+    def __init__(self, path: Path, clock=None):
+        super().__init__(path, clock)  # reads the file the plain way first, then packs it and lets go of the dicts
+        self._stats_keys: tuple[str, ...] = ()
+        for entry in self.writers.values():
+            if isinstance(entry.get("stats"), dict):
+                self._stats_keys = tuple(entry["stats"])
+                break
+        shared: dict[str, str] = {}
+        self.writers = {name: self._packed(entry, "stats", shared) for name, entry in self.writers.items()}
+        self.flairs = {comment_id: self._packed(entry, "flair", shared) for comment_id, entry in self.flairs.items()}
+
+    def _packed(self, entry, field_name: str, shared: dict[str, str]):
+        try:
+            when = datetime.fromisoformat(entry["checked_at"])
+            value = entry[field_name]
+        except (KeyError, TypeError, ValueError):
+            return entry
+        if len(entry) != 2:
+            return entry
+        if field_name == "stats":
+            if isinstance(value, dict):
+                if tuple(value) != self._stats_keys:
+                    return entry
+                value = tuple(value.values())
+            elif value is not None:
+                return entry
+        elif isinstance(value, str):
+            value = shared.setdefault(value, value)
+        elif value is not None:
+            return entry
+        return (when, value)
+
+    def _unpacked(self, entry, field_name: str):
+        when, value = entry
+        if field_name == "stats" and value is not None:
+            value = dict(zip(self._stats_keys, value))
+        return when, value
+
+    def user_stats(self, name: str):
+        return self._fresh(self.writers.get(name.lower()), "stats")
+
+    def flair(self, comment_id: str):
+        return self._fresh(self.flairs.get(comment_id), "flair")
+
+    def checked_at(self, name: str) -> datetime | None:
+        entry = self.writers.get(name.lower())
+        return None if entry is None else entry[0] if isinstance(entry, tuple) else datetime.fromisoformat(entry["checked_at"])
+
+    def flair_checked_at(self, comment_id: str) -> datetime | None:
+        entry = self.flairs.get(comment_id)
+        return None if entry is None else entry[0] if isinstance(entry, tuple) else datetime.fromisoformat(entry["checked_at"])
+
+    def _fresh(self, entry, name: str):
+        if not isinstance(entry, tuple):
+            return super()._fresh(entry, name)
+        when, value = self._unpacked(entry, name)
+        if self._clock() - when > timedelta(days=LIBRARY_REFRESH_DAYS):
+            return MISSING
+        return value
+
+    def _read_only(self, *args, **kwargs):
+        raise TypeError("the compact profile store is read only. Use ProfileStore to change the library's profiles")
+
+    put_user = put_flair = keep_only = save = _read_only
+
+
 class StoredProfiles:
     """Writers' standing for an answer: the library's store first, then the 48-hour cache; never a call."""
 

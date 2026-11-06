@@ -267,7 +267,7 @@ from engine.product_facts import (
     request_asks,
     uncheckable_brand_reason,
 )
-from engine.profiles import ProfileStore, StoredProfiles, with_profiles
+from engine.profiles import CompactProfileStore, StoredProfiles, with_profiles
 from engine.query import _OTHER_KNIVES as OTHER_KNIVES, PRODUCT_TYPES, ParsedQuery, parse_query
 from engine.rank import KindNote, RankingResult, ScoredMention, rank_products
 from engine.sources import LocalSource, mentions_product, names_product, titled_as_another_type
@@ -3040,7 +3040,7 @@ def _same_brand(brand: ProductGroup, product: ProductGroup, as_written: bool = F
     the names as written only, for the rules on what is sold (_within_budget): a line its writers name thirty times
     isn't taken for its one unsold model there."""
     bases = () if as_written else brand.bases
-    key = (brand.category, frozenset(brand.names), bases, frozenset(product.names), product.name)
+    key = (brand.category, _names_set(brand.names), bases, _names_set(product.names), product.name)
     found = _SAME_BRAND.get(key)
     if found is None:
         found = _SAME_BRAND.keep(key, _same_brand_of(brand, product, bases))
@@ -3048,6 +3048,16 @@ def _same_brand(brand: ProductGroup, product: ProductGroup, as_written: bool = F
 
 
 _SAME_BRAND = Table()  # (category, a brand's names, its bases, a product's names, its name) -> _same_brand's answer
+_NAME_SETS = Table()  # a set of names -> the one set object that stands for it (5 Nov 2026, the site-memory builder)
+
+
+def _names_set(names) -> frozenset:
+    """The set of a group's names, as one object for all the pairs that hold it. A product's names are in the key of the
+    pair it makes with every brand, and each key held its own new set (104,768 pairs were 76 MB, about 70% of it these
+    sets)."""
+    found = frozenset(names)
+    kept = _NAME_SETS.get(found)
+    return kept if kept is not None else _NAME_SETS.keep(found, found)
 
 
 def _same_brand_of(brand: ProductGroup, product: ProductGroup, bases: tuple[str, ...] = ()) -> bool:
@@ -3291,13 +3301,14 @@ def _writer(comment: Comment) -> str | None:
     return comment.author.name.lower() if comment.author is not None else None
 
 
-def live_checker():
+def live_checker(**settings):
     """The live check of shown quotes through Reddit's embed page (engine/live_check.py), for real answers: checks are
     kept in this machine's folder, and in the bucket CREDIBLE_RECS_LIVE_CACHE_BUCKET names when it is set (the live
-    site, which shares it with the daily pre-check, engine/precheck.py; 13 Oct 2026)."""
+    site, which has shared it with the daily pre-check, engine/precheck.py, since 13 Oct 2026). `settings` go to the checker
+    (checker_from_env), such as `in_memory` (the public site on Cloud Run, 5 Nov 2026)."""
     from engine.live_check import checker_from_env
 
-    return checker_from_env()
+    return checker_from_env(**settings)
 
 
 def cached_profiles() -> StoredProfiles:
@@ -3305,7 +3316,7 @@ def cached_profiles() -> StoredProfiles:
     line, the demo and the evaluation use."""
     from engine.arctic_shift import ArcticShiftClient
 
-    return StoredProfiles(ProfileStore(DEFAULT_LIBRARY_DIR / "profiles.json"), ArcticShiftClient())
+    return StoredProfiles(CompactProfileStore(DEFAULT_LIBRARY_DIR / "profiles.json"), ArcticShiftClient())
 
 
 def main(argv: list[str]) -> int:

@@ -149,9 +149,9 @@ from engine.config import (
 from engine.extract import CheckResult
 from engine.memo import Table, register
 from engine.match_products import (
-    DEFAULT_ALIASES, KIND_WORDS, PACK_SIZE, Aliases, _features, candidate_pairs, comparable, held_back_word,
-    join_split_words, known_aliases, match_candidates_and_open, normalize_name, own_words, plain_words, product_words,
-    same_words, same_words_looked_at, spell_out, written_alike,
+    DEFAULT_ALIASES, KIND_WORDS, PACK_SIZE, Aliases, _features, candidate_pairs, comparable, forget_names,
+    held_back_word, join_split_words, known_aliases, match_candidates_and_open, normalize_name, own_words, plain_words,
+    product_words, same_words, same_words_looked_at, spell_out, written_alike,
 )
 
 # Words that never tell two products apart, so a loose name equal to a product's name but for them names that product
@@ -386,14 +386,16 @@ def library_name_index(mentions: Iterable[ProductMention],
 
     aliases = known_aliases() if aliases is None else aliases
     names: dict[str, set[Words]] = defaultdict(set)
+    pool: dict[str, str] = {}  # one string a word, shared by the names of this index (sys.intern would keep them for ever)
     for m in mentions:
-        words = tuple(product_words(m.product, aliases.get(m.category, {})))
+        words = tuple(pool.setdefault(w, w) for w in product_words(m.product, aliases.get(m.category, {})))
         if words:
             names[m.category].add(words)
     first = [(_type_words(p.name), _type_phrases(p.name)) for p in FIRST_PRODUCT_TYPES]
     more: dict[str, list[tuple[frozenset[str], tuple[Words, ...]]]] = defaultdict(list)
     for p in PRODUCT_TYPES[len(FIRST_PRODUCT_TYPES):]:
         more[p.category].append((_type_words(p.name), _type_phrases(p.name)))
+    forget_names()  # 5 Nov 2026: the words worked out of every name here are not needed again (match_products.forget_names)
     return LibraryNameIndex(dict(names), {category: first + more[category] for category in names})
 
 
@@ -418,6 +420,7 @@ class LibraryNameIndex(Mapping):
                 made = self._made.get(category)
                 if made is None:
                     made = self._made[category] = NameIndex(own | _bases(own, self._types[category]))
+                    forget_names()  # 5 Nov 2026: the features of every name of the category are not needed again
         return made
 
     def __contains__(self, category) -> bool:

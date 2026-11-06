@@ -65,7 +65,7 @@ import threading
 import time
 import urllib.error
 import http.client
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -465,6 +465,129 @@ class Bundle:
                             if isinstance(item, dict)})
 
 
+# --- Taking a bundle in one item at a time (5 Nov 2026, the review of the site-memory branch) ---
+#
+# json.loads on the whole bundle holds the file, its text decoded (2 to 4 bytes a letter once a curly quote or an emoji is
+# in it) and every string parsed out of it, all at once: about 7.8 times the file for a moment, which the review measured
+# as +414 MiB for the largest bundle (52.8 MB) on a site that has 2 GiB. The site needs one thread at a time. So it finds
+# where each item lies in the file (a scan of the file's brackets and strings, with nothing parsed) and parses one item at
+# a time. What it writes is what it always wrote, in the same order.
+
+_SPACE = re.compile(rb"[ \t\n\r]*")
+_PLAIN = re.compile(rb'[^ \t\n\r"{}\[\]:,]+')
+_STRING_REST = re.compile(rb'[^"\\]*(?:\\.[^"\\]*)*"', re.S)  # what follows a string's opening quote, up to its closing one
+
+
+def _tokens(data: bytes) -> Iterator[tuple[str, int, int]]:
+    """The file's tokens as (kind, start, end): "s" a string, "v" any other value (a number, true, false, null), or the
+    bracket, colon or comma itself. Nothing in them is parsed."""
+    position, size = 0, len(data)
+    while True:
+        position = _SPACE.match(data, position).end()
+        if position >= size:
+            return
+        first = data[position]
+        if first == 0x22:  # a quote: a string, to its closing quote
+            found = _STRING_REST.match(data, position + 1)
+            if found is None:
+                raise ValueError("a string in the bundle is never closed")
+            yield "s", position, found.end()
+            position = found.end()
+        elif first in b"{}[]:,":
+            yield chr(first), position, position + 1
+            position += 1
+        else:
+            found = _PLAIN.match(data, position)
+            yield "v", position, found.end()
+            position = found.end()
+
+
+def _next(tokens: Iterator[tuple[str, int, int]]) -> tuple[str, int, int]:
+    try:
+        return next(tokens)
+    except StopIteration:
+        raise ValueError("the bundle ends too early") from None
+
+
+def _skip_value(tokens: Iterator[tuple[str, int, int]], first: tuple[str, int, int]) -> int:
+    """Reads past the value that begins with the token `first`: where it ends."""
+    kind, _, end = first
+    if kind not in "{[":
+        if kind in "}]:,":
+            raise ValueError("a value is missing in the bundle")
+        return end
+    closing = ["}" if kind == "{" else "]"]
+    for kind, _, end in tokens:
+        if kind in "{[":
+            closing.append("}" if kind == "{" else "]")
+        elif kind in "}]":
+            if kind != closing.pop():
+                raise ValueError("the brackets of the bundle don't match")
+            if not closing:
+                return end
+    raise ValueError("a bracket of the bundle is never closed")
+
+
+def _members(data: bytes, tokens: Iterator[tuple[str, int, int]]) -> Iterator[tuple[str, tuple[str, int, int]]]:
+    """The members of an object whose opening bracket was just read, as (name, the first token of its value). The caller
+    reads each value from `tokens` (skips it or goes into it) before asking for the next member."""
+    kind, start, end = _next(tokens)
+    while kind != "}":
+        if kind != "s":
+            raise ValueError("a name is missing in the bundle")
+        name = json.loads(data[start:end])
+        if _next(tokens)[0] != ":":
+            raise ValueError("a colon is missing in the bundle")
+        yield name, _next(tokens)
+        kind, start, end = _next(tokens)
+        if kind == ",":
+            kind, start, end = _next(tokens)
+            if kind == "}":
+                raise ValueError("a comma too many in the bundle")
+        elif kind != "}":
+            raise ValueError("a comma is missing in the bundle")
+
+
+def bundle_spans(data: bytes) -> dict[str, tuple[int, int]]:
+    """Where each thread's item lies in the bundle's file, by thread id: (start, end) of its JSON text. A thread named
+    twice is its last copy, as in a parse. The file's whole shape is checked on the way, apart from the inside of the
+    items (bundle_items parses those)."""
+    tokens = _tokens(data)
+    if _next(tokens)[0] != "{":
+        raise ValueError("a bundle is an object")
+    spans: dict[str, tuple[int, int]] = {}
+    for name, first in _members(data, tokens):
+        if name == "threads" and first[0] == "{":
+            spans = {}  # the last "threads" of the file is the one that counts, as in a parse
+            for tid, item in _members(data, tokens):
+                spans[tid] = (item[1], _skip_value(tokens, item))
+            continue
+        value = json.loads(data[first[1]:_skip_value(tokens, first)])  # a value in the file is read whole, a small one
+        if name == "threads":
+            spans = {}
+            if value:
+                raise ValueError("the threads of a bundle are an object")
+    if next(tokens, None) is not None:
+        raise ValueError("there is more after the bundle")
+    return spans
+
+
+def bundle_items(data: bytes) -> Iterator[tuple[str, Item]]:
+    """The bundle's items one at a time, in the order of their thread ids: what
+    sorted(Bundle.from_json(json.loads(data)).threads.items()) holds, with one item parsed at a time. What makes a
+    parse of the whole fail makes this fail too (a ValueError, TypeError or AttributeError), with one difference: a thread
+    named twice is its last copy, and only that copy is parsed, so a broken earlier copy that a later one overrides is
+    accepted here where json.loads of the whole file refuses it. That is harmless, since the reading job writes the bundle
+    with json.dumps of a dict, which never names a thread twice. Nothing but a thread's item that is a plain object is
+    taken (an item of another shape is left out, as Bundle.from_json does)."""
+    spans = bundle_spans(data)
+    for tid in sorted(spans):
+        start, end = spans[tid]
+        item = json.loads(data[start:end])
+        if isinstance(item, dict):
+            yield tid, Item.from_json(item)
+
+
 class _Stored:
     """One JSON object in the bucket, read with its version and written only over that version."""
 
@@ -728,13 +851,24 @@ class SiteReader:
                 if data is None:
                     return None
                 try:
-                    bundle = Bundle.from_json(json.loads(data))
+                    for _ in bundle_items(data):  # read through once first: a bundle that can't be read writes nothing
+                        pass
                 except (ValueError, TypeError, AttributeError):
                     return None
-                changed += write_threads(bundle, self.library_dir, self._written)
+                read_on: dict[str, datetime] = {}
+
+                def items():  # 5 Nov 2026: one item parsed at a time (see bundle_items), never the whole bundle
+                    for tid, item in bundle_items(data):
+                        when = _time(item.added_at)
+                        if when is not None:
+                            read_on[tid] = when
+                        yield tid, item
+
+                changed += write_items(items(), self.library_dir, self._written)
+                del data
                 for tid in self._written:
-                    if tid in bundle.threads and _time(bundle.threads[tid].added_at) is not None:
-                        self._read_on[tid] = _time(bundle.threads[tid].added_at)
+                    if tid in read_on:
+                        self._read_on[tid] = read_on[tid]
                 self._bundle_generation = generation
             return changed + self._let_go_of_old()
 
@@ -777,13 +911,18 @@ def back_when(until: datetime | None, now: datetime) -> str:
 
 
 def write_threads(bundle: Bundle, library_dir: Path, written: dict[str, str]) -> int:
-    """Writes the bundle's extracted threads into a library folder: threads/<id>.json first, then extracted/<id>.json,
-    each whole under another name and then swapped in. A thread the folder already holds that wasn't written from the
-    bundle (`written`: id -> fingerprint, kept by the caller) is a baked thread: never overwritten. How many were
-    written. A thread Noemi said to remove (config.REMOVED_THREADS) is never written (fix 1 after the warm, 5 Nov 2026:
-    the bundle's own paths, the site's load_threads and Noemi's pull, had not checked it)."""
+    """Writes the bundle's extracted threads into a library folder (write_items), in the order of their ids."""
+    return write_items(sorted(bundle.threads.items()), library_dir, written)
+
+
+def write_items(items: Iterable[tuple[str, Item]], library_dir: Path, written: dict[str, str]) -> int:
+    """Writes the extracted threads among `items` (thread id, item) into a library folder: threads/<id>.json first, then
+    extracted/<id>.json, each whole under another name and then swapped in. A thread the folder already holds that wasn't
+    written from the bundle (`written`: id -> fingerprint, kept by the caller) is a baked thread: never overwritten. How
+    many were written. A thread Noemi said to remove (config.REMOVED_THREADS) is never written (fix 1 after the warm, 5
+    Nov 2026: the bundle's own paths, the site's load_threads and Noemi's pull, had not checked it)."""
     count = 0
-    for tid, item in sorted(bundle.threads.items()):
+    for tid, item in items:
         if item.extraction is None or not re.fullmatch(r"[A-Za-z0-9]+", tid) or tid in REMOVED_THREADS:
             continue
         thread_path = Path(library_dir) / "threads" / f"{tid}.json"

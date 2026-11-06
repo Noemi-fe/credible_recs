@@ -668,7 +668,9 @@ class _ThreadFacts:
 
 
 _THREAD_FACTS: OrderedDict[int, tuple[Thread, _ThreadFacts]] = OrderedDict()  # id(thread) -> (the thread, its facts)
-THREADS_REMEMBERED = 512
+# 256 since 5 Nov 2026 (512 before, which was 28 MB of the live site's memory). An answer asks about its own threads, 16 to
+# 48 of them and 200 at most for a popular type (config.PIPELINE_POPULAR_THREADS), so none is worked out twice in an answer.
+THREADS_REMEMBERED = 256
 register(_THREAD_FACTS.clear)
 
 
