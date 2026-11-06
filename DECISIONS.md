@@ -2599,3 +2599,5 @@ Dated, oldest first (moved from CLAUDE.md's Open items on 18 Oct 2026). Noemi's 
   phrase. Two tests changed on purpose with dated notes (test_approvals.py's month message and
   test_on_demand_backfill.py's guard rest). The whole suite passed: 7,469 passed and 3 skipped, none failed (3 min 3 s,
   under the heavy lock).
+- 6 Nov 2026, "up to 73" deployed as revision 00083 at 3 GiB (merge 8ba0055). No threads were waiting to be pulled, and
+  the live site answered at once. The 2 GiB step's 2-day clock restarts from this deploy.
